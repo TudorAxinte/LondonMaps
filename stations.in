@@ -1,4 +1,5 @@
-Line: Bakerloo
+*
+Bakerloo
 Elephant & Castle
 Lambeth North
 Waterloo
@@ -24,8 +25,8 @@ North Wembley
 South Kenton
 Kenton
 Harrow & Wealdstone
-
-Line: Central
+*
+Central
 Epping
 Theydon Bois
 Debden
@@ -75,8 +76,8 @@ Northolt
 South Ruislip
 Ruislip Gardens
 West Ruislip
-
-Line: Hammersmith & City
+*
+Hammersmith & City
 Hammersmith
 Goldhawk Road
 Shepherd's Bush
@@ -98,8 +99,8 @@ Aldgate
 Tower Hill
 Aldgate East
 Whitechapel
-
-Line: Circle
+*
+Circle
 Tower Hill
 Aldgate
 Liverpool Street
@@ -127,8 +128,8 @@ Blackfriars
 Mansion House
 Cannon Street
 Monument
-
-Line: District
+*
+District
 Upminster
 Upminster Bridge
 Hornchurch
@@ -184,8 +185,8 @@ Chiswick Park
 Acton Town
 Ealing Common
 Ealing Broadway
-
-Line: East London
+*
+East London
 New Cross
 New Cross Gate
 Surrey Quays
@@ -194,8 +195,8 @@ Wapping
 Shadwell
 Whitechapel
 Shoreditch
-
-Line: Jubilee
+*
+Jubilee
 Stanmore
 Canons Park
 Queensbury
@@ -222,8 +223,8 @@ Canary Wharf
 Canning Town
 West Ham
 Stratford
-
-Line: Metropolitan
+*
+Metropolitan
 Aldgate
 Liverpool Street
 Moorgate
@@ -259,8 +260,8 @@ Chorleywood
 Chalfont Latimer
 Chesham
 Amersham
-
-Line: Northen
+*
+Northen
 Morden
 South Wimbledon
 Colliers Wood
@@ -311,8 +312,8 @@ Hendon Central
 Colindale
 Burnt Oak
 Edgeware
-
-Line: Picadilly
+*
+Picadilly
 Cockfosters
 Oakwood
 Southgate
@@ -358,8 +359,8 @@ Sudbury Town
 Sudbury Hill
 South Harrow
 Rayners Lane
-
-Line: Victoria
+*
+Victoria
 Brixton
 Stockwell
 Vauxhall
@@ -376,7 +377,7 @@ Seven Sisters
 Tottenham Hale
 Blackhorse Road
 Walthamstow Central
-
-Line: Waterloo & City
+*
+Waterloo & City
 Waterloo
 Bank

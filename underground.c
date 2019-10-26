@@ -7,7 +7,7 @@ char* stations_file = "stations.in";
 
 
 
-struct station
+struct metro_station
 {
 	int id;                 // Station identification number
 	int connected_ids[10]; // The ids of stations connected to this station 
@@ -17,7 +17,7 @@ struct station
 
  	int distance_from_start; // Temporary variable, used in the search progress to find the shortest route
 
-};
+} station[400];
 
 void get_stations()
 {
@@ -26,8 +26,11 @@ void get_stations()
     ssize_t read;
     FILE * fp = fopen(stations_file, "r");
 
+    int id = 0;
+    char *current_line;
 
-    buffer = (char *)malloc(bufsize * sizeof(char));
+    buffer = (char *)malloc(bufsize * sizeof(char)); //Assigning 32 bytes of storage to prevent the program to run out of memory
+    current_line = (char *)malloc(bufsize * sizeof(char));
 
     if (fp == NULL)
     {
@@ -36,12 +39,26 @@ void get_stations()
     }
     else 
    		while ((read = getline(&buffer, &bufsize, fp)) != -1) 
-    {
-     
-    	    printf("'%s'\n",buffer);
+    		{
+      			
+    	     if (strchr(buffer, '*') != NULL)
 
+    	     {	
+    	     	read = getline(&buffer, &bufsize, fp);
+    	     	strcpy( current_line, buffer);
 
-    }
+    	     }
+    	     
+    	     else
+    	     	{
+
+    	     		strcpy (station[id].name, buffer);
+    	     		strcpy (station[id].line, current_line); 
+    	     		id++;
+
+    	     	} 
+
+    		}
 
     fclose(fp);
 }
@@ -49,6 +66,6 @@ void get_stations()
 int main()
 {
 	get_stations();
-
+	
 return 0;	
 }
