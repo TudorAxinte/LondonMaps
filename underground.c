@@ -7,24 +7,27 @@
 // Global Variables
 char* stations_file;
 char *buffer;
+char* service_operator;
 size_t bufsize = 32;
 ssize_t read;
 float time;
 float station_pass_time;
 int algorithm = 0;
 int current_line;
+int destination_line;
 int total_stations;
 int total_lines;
 int total_junctions;
+int total_lenght;
 int start_id;
 int destination_id;
 
 struct metro_station
 {
-	char name[30]; // The name of the current station
+	char name[30]; 
 	bool is_inteline;
-	int lines_connected[6]; // The ids of the lines this station is a part of
- 	int distance_from_start; // Temporary variable, used in the search progress to find the shortest route
+	int lines_connected[6]; 
+ 	int distance_from_start; 
 
 } station[400];
 
@@ -45,12 +48,14 @@ void location(int n)
 		printf("The location is now set to London. Mind the gap.\n");
 		station_pass_time = 1.25;
 		stations_file = "stations.in";
+		service_operator= "TFL";
 		break;
 
 		case 2:
 		printf("The location is now set to Bucharest.\n");
 		station_pass_time = 2.2;
 		stations_file = "bucharest_stations.in";
+		service_operator= "Metrorex";
 		break;
 
 		default:
@@ -145,7 +150,7 @@ void find_junctions()
  				{
  					counter++;
  					station[id].lines_connected[counter] = line_id;
- 					break; //We won't find the same station 2 times on a line, search the next one
+ 					//break; //We won't find the same station 2 times on a line, search the next one
  				}		 	
  		}
 
@@ -200,40 +205,6 @@ for (int i=0; i<= total_stations; i++)
 
 }
 
-
-void same_line_path()
-{
-	int lenght = 0, start_index, destination_index;
-
-	for (int i=0; i < line[current_line].number_of_stations; i++)
-
-		if (strstr( station[line[current_line].stations[i]].name, station[start_id].name) != 0) start_index = i;
-		else if (strstr( station[line[current_line].stations[i]].name, station[destination_id].name) != 0) destination_index = i;
-
-	lenght = abs(start_index - destination_index);
-	time  += lenght * station_pass_time;
-
-	if (start_index > destination_index)
-	{
-		printf("\nTake the undergrounder heading towards %s", 
-			station[line[current_line].stations[0]].name);
-		printf("Your journey will take %g minutes (%d stops)\n", round(time), lenght);
-
-		for (int i=start_index; i >= destination_index; i--)
-			printf(":%s", station[line[current_line].stations[i]].name );
-		
-	}	
-	else
-	{
-		printf("\nTake the undergrounder heading towards %s",
-			station[line[current_line].stations[line[current_line].number_of_stations - 1]].name);
-		printf("Your journey will take %g minutes (%d stops)\n", round(time), lenght);
-
-		for (int i=start_index; i <= destination_index; i++)
-			printf(":%s", station[line[current_line].stations[i]].name );
-	}
-}
-
 void get_user_input()
 {
 
@@ -278,40 +249,158 @@ void get_user_input()
 int check_input()
 {
 	algorithm = 0;
-	int start_index = 0;
-	int destination_index = 0;
+	
+	int line_frecvence_array[total_lines];
+	memset(line_frecvence_array, 0, total_lines*sizeof(int));
 
-	// Checking the lines each station has connections to 
-	for (start_index=0; start_index< 6; start_index++)
-		
-		for (destination_index=0; destination_index< 6; destination_index++)
-			
-			if (station[start_id].lines_connected[start_index] == station[destination_id].lines_connected[destination_index]
-				&& station[start_id].lines_connected[start_index] != 0)
+	for (int index = 0; index <= 6; index++)
+		{
+		if (station[start_id].lines_connected[index] != 0) line_frecvence_array[station[start_id].lines_connected[index]]++;
+		if (station[destination_id].lines_connected[index] != 0) line_frecvence_array[station[destination_id].lines_connected[index]]++;
+		}
+
+	// Test if the stations are on the same line
+	for (int index = 1; index <= total_lines; index++)
+		if (line_frecvence_array[index] >= 2) 
 			{
-				// The stations are on the same line;
 				algorithm = 1;
-				current_line= station[start_id].lines_connected[start_index];
+				current_line= index;
 				return 0;
+
 			}	
+	
+	// Test if the stations differ by one line only
+	for(int destination_line_index=0; destination_line_index<=6; destination_line_index++)
+	{
+		if (station[destination_id].lines_connected[destination_line_index] != 0)
+
+			destination_line = station[destination_id].lines_connected[destination_line_index];
+			
+		for(int line_index=0; line_index <= 6; line_index++)
+	
+			if (station[start_id].lines_connected[line_index] != 0)
+			{
+				current_line = station[start_id].lines_connected[line_index];
+
+				for (int index = 0; index <= line[current_line].number_of_stations ; index++)
+			
+					for(int station_line_index=0; station_line_index<= 6; station_line_index++)
+
+						if (station[line[current_line].stations[index]].lines_connected[station_line_index] == destination_line)
+						{
+							algorithm = 2;
+							return 0;
+						}
+		}				
+	}	
+
+
+}
+
+void print_path(int start_index, int destination_index, int lenght)
+{
+	if (start_index > destination_index)
+	{
+		printf("Take the undergrounder %d stations heading towards %s \n", 
+			lenght,
+			station[line[current_line].stations[0]].name);
+		for (int i=start_index; i >= destination_index; i--)
+			printf(":%s", station[line[current_line].stations[i]].name );
+		
+	}	
+	else
+	{
+		printf("Take the undergrounder %d stations heading towards %s \n",
+			lenght,
+			station[line[current_line].stations[line[current_line].number_of_stations - 1]].name);
+
+		for (int i=start_index; i <= destination_index; i++)
+			printf(":%s", station[line[current_line].stations[i]].name );
+	}
+}
+
+void one_line_path()
+{
+	int lenght = 9999, start_index, destination_index;
+
+	for (int i=0; i < line[current_line].number_of_stations; i++)
+		if (strstr( station[line[current_line].stations[i]].name, station[destination_id].name) != 0) 
+			{
+				destination_index = i;
+				break;
+			}
+
+	// Extra check to make sure we find the shortest route for lines with duplicate stations
+	for (int i=0; i < line[current_line].number_of_stations; i++)
+		if (strstr( station[line[current_line].stations[i]].name, station[start_id].name) != 0 &&
+			abs(i - destination_index) < lenght) 
+				{ 
+					start_index = i;
+					lenght = abs(start_index - destination_index);
+				}
+	
+	time  += lenght * station_pass_time;
+	total_lenght += lenght;
+
+	print_path(start_index, destination_index, lenght);
+}
+
+void two_lines_path()
+{
+	int lenght = 9999, start_index, destination_index;
+
+	for (int i=0; i < line[current_line].number_of_stations; i++)
+		if (strstr( station[line[current_line].stations[i]].name, station[start_id].name) != 0) 
+			{
+				start_index = i;
+				break;
+			}
+
+	for (int i=0; i < line[current_line].number_of_stations; i++)
+		for (int index=0; index<=6; index++)
+			if (station[line[current_line].stations[i]].lines_connected[index] == destination_line && abs(i - start_index) < lenght)
+			{
+				lenght = abs(i - start_index);
+				destination_index=i;
+			}
+
+	time  += lenght * station_pass_time;
+	total_lenght += lenght;
+
+	print_path(start_index, destination_index, lenght);
+
+	printf("\nGet off the current train at %s", station[line[current_line].stations[destination_index]].name);
+	printf("Mind the gap. You will have to switch to line %s", line[destination_line].name );
+	
+	start_id = line[current_line].stations[destination_index];
+	current_line = destination_line;
+	one_line_path();
 
 }
 
 void find_route()
 {
 	time = 0;
+	total_lenght = 0;
+	printf("\n");
 
 	switch (algorithm)
 	{
 		case 1:
-		same_line_path();
+		one_line_path();
+		break;
+
+		case 2:
+		two_lines_path();
 		break;
 
 		default:
 		printf("Didn't code that yet\n");
 		break;
-
-	}	
+	}
+	
+	printf("\nYour journey will take %g minutes (%d stops)", round(time), total_lenght);
+	printf("\nService run by %s. Check their website for ticket information.\n", service_operator);
 }
 
 void debug()
@@ -339,7 +428,7 @@ void debug()
 
 		}
 
-		else if (strcmp(command,"station")==0)
+		else if (strcmp(command,"station")==0) 
 		{
 			scanf("%d", &id);
 			
@@ -362,6 +451,7 @@ void debug()
 		else if (strcmp(command,"junctions")==0)
 		{	
 			print_interline_stations();
+			debug();
 		}	
 		
 		else if (strcmp(command,"name")==0)
@@ -387,6 +477,7 @@ void debug()
 			int n;
 			scanf("%d", &n);
 			location(n);
+			debug();
 			break;
 		}
 		
@@ -395,12 +486,14 @@ void debug()
 			get_user_input();
 			check_input();
 			find_route();
+			debug();
 			break;
 		}
 		
 		else if (strcmp(command,"quit")==0)
 		{	
 			debuging = false;
+			exit(0);
 			break;
 		}
 		
