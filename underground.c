@@ -25,10 +25,10 @@ int destination_id;
 struct metro_station
 {
 	char name[30]; 
-	bool is_inteline;
 	int lines_connected[6]; 
- 	int distance_from_start; 
-
+ 	int distance_from_start;
+ 	int number_of_lines;
+ 
 } station[400];
 
 struct metro_line
@@ -100,15 +100,12 @@ void get_stations()
     	     	strcpy( line[line_id].name, buffer);
     	     	strncpy( line[line_id].name, line[line_id].name, 30);  
 
-    	     	//printf("\nLine %s", line[line_id].name );   
-
     	     }
     	     
     	     else
     	     	{
     	     		// Creating station data
     	     		strcpy (station[id].name, buffer); 
-					//printf("  id: %d name: %s", id, station[id].name );
 
     	     		memset(station[id].lines_connected, 0, 6*sizeof(int));
     	     		station[id].lines_connected[0] = line_id;  
@@ -130,7 +127,6 @@ void get_stations()
 
 void find_junctions() 
 {
- 	bool is_inteline;
  	int counter;
 
  	total_junctions = 0;
@@ -138,7 +134,7 @@ void find_junctions()
  	for (int id=0; id < total_stations; id++)
  		{
  		counter = 0;
- 		is_inteline = false;
+ 		station[id].number_of_lines = 1;
 
  		for (int line_id = 1; line_id <= total_lines; line_id++)
  		{
@@ -146,17 +142,18 @@ void find_junctions()
  				
  				// Comparing every station with stations of each line, 
  				if (strstr(station[id].name, station[line[line_id].stations[t]].name) != 0 
- 					&& station[id].lines_connected[0] != line_id)
+ 					&& station[id].lines_connected[0] != line_id
+ 					&& station[id].lines_connected[counter] != line_id)
  				{
  					counter++;
  					station[id].lines_connected[counter] = line_id;
- 					//break; //We won't find the same station 2 times on a line, search the next one
+ 					station[id].number_of_lines ++;
+
+ 					//break; The same station can appear on the same line twice, no need for break
  				}		 	
  		}
 
- 		if (counter>0) { station[id].is_inteline = true; total_junctions++;}
-
-
+ 		if (counter > 0) total_junctions++;
  		}
 }
 
@@ -166,10 +163,10 @@ void print_line(int line_number)
 		line[line_number].number_of_stations, line[line_number].name );
 	
 	for (int i=0;i<line[line_number].number_of_stations;i++) 
-		printf("index: %d | id: %d | is_junction: %d | name: %s",
+		printf("index: %d | id: %d | lines count: %d | name: %s",
 			i,
 			line[line_number]. stations[i],
-			station[line[line_number].stations[i]].is_inteline,
+			station[line[line_number].stations[i]].number_of_lines,
 			station[line[line_number].stations[i]].name );
 	
 }
@@ -178,25 +175,40 @@ void print_station(int station_id)
 {
 	printf("\nSTATION_NAME: %s", station[station_id].name);
 	printf("STATION_ID:   %d \n", station_id);
-	printf("IS_INTERLINE: %d \n", station[station_id].is_inteline);
-	printf("LINES CONNECTED:\n");
-		for (int i=0;i<=6;i++)
+	printf("LINES COUNT: %d \n", station[station_id].number_of_lines);
+	printf("LINES LIST:\n");
+		for (int i=0; i< station[station_id].number_of_lines; i++)
 		{
-			if (station[station_id].lines_connected[i] != 0)
-				printf("(ID: %d) %s", 
-					station[station_id].lines_connected[i],
-					line[station[station_id].lines_connected[i]].name);
+			printf("(ID: %d) %s", 
+			station[station_id].lines_connected[i],
+			line[station[station_id].lines_connected[i]].name);
 		}
 	printf("\n");
 }
 
-
-void print_interline_stations()
+void find_station()
 {
+	char typed_name[30];
+	gets(typed_name);//Cleaning buffer
+
+	printf("Type station name: ");
+	gets(typed_name);
+
+	printf("Printing all station instances of %s.\n", typed_name);
+
+	for(int id=0; id < total_stations; id++)
+		
+		if ( strstr(station[id].name, typed_name) != 0) print_station(id);
+
+}
+
+void print_interline_stations(int n)
+{
+printf("Printing all the stations with at least %d lines connected:\n", n);
 for (int i=0; i<= total_stations; i++)
-		if (station[i].is_inteline) 
+		if (station[i].number_of_lines >= n) 
 		{
-			printf("lines from (id:%d) %s", i, station[i].name);
+			printf("(id:%d) %s", i, station[i].name);
 			for (int j=0; j<=4; j++)
 				if (station[i].lines_connected[j] != 0 )
 					printf(":%s", line[station[i].lines_connected[j]].name);
@@ -225,7 +237,7 @@ void get_user_input()
 					break;
 				}
 		if (start_id == -1)
-			printf("\nCouldn't find any station called %s, please try again.\n", typed_name);
+			printf("Couldn't find any station called %s, please try again.\n", typed_name);
 	}	
 
 	while (destination_id == -1)
@@ -240,7 +252,7 @@ void get_user_input()
 					break;
 				}
 		if (destination_id == -1)
-			printf("\nCouldn't find any station called %s, please try again.\n", typed_name);
+			printf("Couldn't find any station called %s, please try again.\n", typed_name);
 	}
 
 	
@@ -253,11 +265,12 @@ int check_input()
 	int line_frecvence_array[total_lines];
 	memset(line_frecvence_array, 0, total_lines*sizeof(int));
 
-	for (int index = 0; index <= 6; index++)
-		{
-		if (station[start_id].lines_connected[index] != 0) line_frecvence_array[station[start_id].lines_connected[index]]++;
-		if (station[destination_id].lines_connected[index] != 0) line_frecvence_array[station[destination_id].lines_connected[index]]++;
-		}
+	for (int index = 0; index < station[start_id].number_of_lines; index++)
+		line_frecvence_array[station[start_id].lines_connected[index]]++;
+		
+	for (int index = 0; index < station[destination_id].number_of_lines; index++)
+		line_frecvence_array[station[destination_id].lines_connected[index]]++;
+		
 
 	// Test if the stations are on the same line
 	for (int index = 1; index <= total_lines; index++)
@@ -270,21 +283,17 @@ int check_input()
 			}	
 	
 	// Test if the stations differ by one line only
-	for(int destination_line_index=0; destination_line_index<=6; destination_line_index++)
-	{
-		if (station[destination_id].lines_connected[destination_line_index] != 0)
-
-			destination_line = station[destination_id].lines_connected[destination_line_index];
+	for(int destination_line_index=0; destination_line_index < station[destination_id].number_of_lines; destination_line_index++)
+	{		
+		destination_line = station[destination_id].lines_connected[destination_line_index];
 			
-		for(int line_index=0; line_index <= 6; line_index++)
-	
-			if (station[start_id].lines_connected[line_index] != 0)
-			{
+		for(int line_index=0; line_index < station[start_id].number_of_lines; line_index++)
+		{
 				current_line = station[start_id].lines_connected[line_index];
 
 				for (int index = 0; index <= line[current_line].number_of_stations ; index++)
 			
-					for(int station_line_index=0; station_line_index<= 6; station_line_index++)
+					for(int station_line_index=0; station_line_index< station[line[current_line].stations[index]].number_of_lines; station_line_index++)
 
 						if (station[line[current_line].stations[index]].lines_connected[station_line_index] == destination_line)
 						{
@@ -372,6 +381,7 @@ void two_lines_path()
 	printf("\nGet off the current train at %s", station[line[current_line].stations[destination_index]].name);
 	printf("Mind the gap. You will have to switch to line %s", line[destination_line].name );
 	
+	time += 5;
 	start_id = line[current_line].stations[destination_index];
 	current_line = destination_line;
 	one_line_path();
@@ -399,7 +409,7 @@ void find_route()
 		break;
 	}
 	
-	printf("\nYour journey will take %g minutes (%d stops)", round(time), total_lenght);
+	printf("\nYour journey will take approximately %g minutes. (%d stops)", round(time), total_lenght);
 	printf("\nService run by %s. Check their website for ticket information.\n", service_operator);
 }
 
@@ -450,8 +460,15 @@ void debug()
 		
 		else if (strcmp(command,"junctions")==0)
 		{	
-			print_interline_stations();
+			int n;
+			scanf("%d", &n);
+			print_interline_stations(n);
 			debug();
+		}	
+		
+		else if (strcmp(command,"find")==0)
+		{	
+			find_station();
 		}	
 		
 		else if (strcmp(command,"name")==0)
@@ -513,7 +530,6 @@ int main()
 	// check_input();   
 	// find_route();
 	debug();
-	// CREATE A FILE WITH SMART PRECOMPILED LINKERS BEFOREHAND, WILL TAKE A LOT TO COMPILE BUT INSTANT AFTER
 
 return 0;	
 }
