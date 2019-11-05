@@ -6,10 +6,7 @@
 
 // Global Variables
 char* stations_file;
-char *buffer;
 char* service_operator;
-size_t bufsize = 32;
-ssize_t read;
 float time;
 float station_pass_time;
 int algorithm = 0;
@@ -73,11 +70,11 @@ void get_stations()
     int number_of_stations;
     int line_id = 0 ;
 
+    char string[32];
+
     total_stations = 0;
     total_lines = 0;
 
-    //Assigning 32 bytes of storage to prevent the program to run out of memory
-    buffer = (char *)malloc(bufsize * sizeof(char)); 
 
     if (fp == NULL)
     {
@@ -85,28 +82,27 @@ void get_stations()
         exit(EXIT_FAILURE);
     }
     else 
-   		while ((read = getline(&buffer, &bufsize, fp)) != -1) 
+   		while (fgets(string, 64, fp) != NULL) 
     		{
       		 	
-    	     if (strchr(buffer, '*') != NULL) 
+    	     if (strchr(string, '*') != NULL) 
 
     	     {	
     	     	// Switching to a new line, finnishing the previous cycle
     	     	line[line_id].number_of_stations = number_of_stations; 
-    	     	
-    	     	line_id++; // Line array starts at 1, feature not bug                              
+    	   
+    	     	line_id++; // Lines array starts at 1, feature not bug                             
     	     	number_of_stations = 0;                  
-    	     	read = getline(&buffer, &bufsize, fp);
-    	     	strcpy( line[line_id].name, buffer);
-    	     	strncpy( line[line_id].name, line[line_id].name, 30);  
-
+    	     	fgets(string, 64, fp);	
+    	     	strcpy( string + strlen(string) - 2, string + strlen(string));//Remove spaces    	     	
+    	     	strcpy( line[line_id].name, string);
     	     }
     	     
     	     else
     	     	{
     	     		// Creating station data
-    	     		strcpy (station[id].name, buffer); 
-
+    	     		strcpy( string + strlen(string) - 2, string + strlen(string));//Remove spaces
+    	     		strcpy (station[id].name, string); 
     	     		memset(station[id].lines_connected, 0, 6*sizeof(int));
     	     		station[id].lines_connected[0] = line_id;  
 
@@ -159,27 +155,31 @@ void find_junctions()
 
 void print_line(int line_number) 
 {
-	printf("%d stations found for line %s \n", 
-		line[line_number].number_of_stations, line[line_number].name );
+	printf("The line %s has %d stations: \n", 
+		 line[line_number].name,
+		 line[line_number].number_of_stations );
 	
 	for (int i=0;i<line[line_number].number_of_stations;i++) 
-		printf("index: %d | id: %d | lines count: %d | name: %s",
+		printf("| index: %d | id %d | %d lines | %s  \n",
 			i,
 			line[line_number]. stations[i],
 			station[line[line_number].stations[i]].number_of_lines,
-			station[line[line_number].stations[i]].name );
+			station[line[line_number].stations[i]].name
+
+			 );
 	
 }
 
 void print_station(int station_id)
 {
-	printf("\nSTATION_NAME: %s", station[station_id].name);
-	printf("STATION_ID:   %d \n", station_id);
-	printf("LINES COUNT: %d \n", station[station_id].number_of_lines);
-	printf("LINES LIST:\n");
-		for (int i=0; i< station[station_id].number_of_lines; i++)
+	printf("\nStation[%d] is called %s and has %d connected lines: \n", 
+		station_id,
+		station[station_id].name,
+		station[station_id].number_of_lines);
+	
+	for (int i=0; i< station[station_id].number_of_lines; i++)
 		{
-			printf("(ID: %d) %s", 
+			printf("(Line_ID: %d) %s", 
 			station[station_id].lines_connected[i],
 			line[station[station_id].lines_connected[i]].name);
 		}
@@ -215,6 +215,33 @@ for (int i=0; i<= total_stations; i++)
 			printf("\n");	
 		}
 
+}
+void color_red () {
+  printf("\033[1;31m");
+}
+
+void color_green (){
+  printf("\033[0;32m");
+}
+
+void color_boldyellow (){
+  printf("\033[0;33m");
+}
+
+void color_yellow (){
+  printf("\033[01;33m");
+}
+
+void color_boldblue (){
+  printf("\033[0;34m");
+}
+
+void color_blue (){
+  printf("\033[1;34m");
+}	
+
+void color_reset () {
+  printf("\033[0m");
 }
 
 void get_user_input()
@@ -310,21 +337,68 @@ void print_path(int start_index, int destination_index, int lenght)
 {
 	if (start_index > destination_index)
 	{
-		printf("Take the undergrounder %d stations heading towards %s \n", 
-			lenght,
-			station[line[current_line].stations[0]].name);
-		for (int i=start_index; i >= destination_index; i--)
-			printf(":%s", station[line[current_line].stations[i]].name );
+		color_reset();  printf("Take the undergrounder heading ");
+		color_boldyellow(); printf("%s", station[line[current_line].stations[0]].name);
+		color_reset();  printf(" (%d stops) \n\n", lenght);
 		
+		if (lenght <= 6)
+		{
+			color_red();
+			for (int i=start_index; i > destination_index; i--)
+			{
+				printf("%s", station[line[current_line].stations[i]].name );
+				color_reset(); printf(" -> ");
+				color_green();
+			}
+			color_red();
+			printf("%s \n", station[line[current_line].stations[destination_index]].name );
+			color_reset();
+		}
+		else
+		{
+			color_red();
+			for (int i=start_index; i > destination_index; i--)
+			{
+				printf(":%s \n", station[line[current_line].stations[i]].name );
+				color_green();
+			}
+			color_red();
+			printf(":%s \n", station[line[current_line].stations[destination_index]].name );
+			color_reset();
+		}
+
 	}	
 	else
-	{
-		printf("Take the undergrounder %d stations heading towards %s \n",
-			lenght,
-			station[line[current_line].stations[line[current_line].number_of_stations - 1]].name);
-
-		for (int i=start_index; i <= destination_index; i++)
-			printf(":%s", station[line[current_line].stations[i]].name );
+	{   
+		color_reset(); printf("Take the undergrounder heading ");
+		color_boldyellow(); printf("%s",station[line[current_line].stations[line[current_line].number_of_stations - 1]].name);
+		color_reset(); printf(" (%d stops) \n\n", lenght);	
+		
+		if (lenght <= 6)
+		{	
+			color_red();
+			for (int i=start_index; i < destination_index; i++)
+			{
+				printf("%s", station[line[current_line].stations[i]].name );
+				color_reset(); printf(" -> ");
+				color_green();
+			}
+			color_red();
+			printf("%s \n", station[line[current_line].stations[destination_index]].name );
+			color_reset();
+		}
+		else
+		{
+			color_red();
+			for (int i=start_index; i < destination_index; i++)
+			{
+				printf(":%s \n", station[line[current_line].stations[i]].name );
+				color_green();
+			}
+			color_red();
+			printf(":%s \n", station[line[current_line].stations[destination_index]].name );
+			color_reset();
+		}
 	}
 }
 
@@ -378,10 +452,14 @@ void two_lines_path()
 
 	print_path(start_index, destination_index, lenght);
 
-	printf("\nGet off the current train at %s", station[line[current_line].stations[destination_index]].name);
-	printf("Mind the gap. You will have to switch to line %s", line[destination_line].name );
+	color_reset();    printf("\nAt the junction ");
+	color_blue();     printf("%s ", station[line[current_line].stations[destination_index]].name);
+	color_reset();    printf("you have to change lines from ");
+	color_red(); printf("%s",line[current_line].name);
+	color_reset();    printf(" to ");
+	color_red(); printf("%s; \n",line[destination_line].name);
 	
-	time += 5;
+	time += 5; // Adding some time accounting for the walk between lines
 	start_id = line[current_line].stations[destination_index];
 	current_line = destination_line;
 	one_line_path();
@@ -524,11 +602,17 @@ void debug()
 
 int main()
 {
-	// get_stations();  
+	// location(2);
+	// get_stations();		
+	// printf("Station list updated successfully with %d stations on %d lines.\n", total_stations, total_lines);
 	// find_junctions();
-	// get_user_input();            
-	// check_input();   
-	// find_route();
+	// printf("Junction list updated successfully with %d junction stations.\n", total_junctions);
+	
+	
+	//get_user_input();            
+	//check_input();   
+	//find_route();
+	
 	debug();
 
 return 0;	
