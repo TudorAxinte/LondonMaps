@@ -9,13 +9,15 @@ char* stations_file;
 char* service_operator;
 float time;
 float station_pass_time;
-int algorithm = 0;
+int algorithm;
 int current_line;
+int middle_line;
 int destination_line;
 int total_stations;
 int total_lines;
 int total_junctions;
 int total_lenght;
+int total_changes;
 int start_id;
 int destination_id;
 
@@ -106,7 +108,7 @@ void get_stations()
     	     		memset(station[id].lines_connected, 0, 6*sizeof(int));
     	     		station[id].lines_connected[0] = line_id;  
 
-    	     		line [ line_id ].stations [number_of_stations] = id; // Adding the station to the current line
+    	     		line[line_id].stations[number_of_stations] = id; // Adding the station to the current line
     	     		
     	     		id++; 
     	     		number_of_stations++;
@@ -137,7 +139,7 @@ void find_junctions()
  			for (int t=0; t < line[line_id].number_of_stations; t++) // Variable t is an index for line[j].stations[]
  				
  				// Comparing every station with stations of each line, 
- 				if (strstr(station[id].name, station[line[line_id].stations[t]].name) != 0 
+ 				if (strcmp(station[id].name, station[line[line_id].stations[t]].name) == 0 
  					&& station[id].lines_connected[0] != line_id
  					&& station[id].lines_connected[counter] != line_id)
  				{
@@ -179,7 +181,7 @@ void print_station(int station_id)
 	
 	for (int i=0; i< station[station_id].number_of_lines; i++)
 		{
-			printf("(Line_ID: %d) %s", 
+			printf("(Line-ID: %d) %s \n", 
 			station[station_id].lines_connected[i],
 			line[station[station_id].lines_connected[i]].name);
 		}
@@ -208,14 +210,19 @@ printf("Printing all the stations with at least %d lines connected:\n", n);
 for (int i=0; i<= total_stations; i++)
 		if (station[i].number_of_lines >= n) 
 		{
-			printf("(id:%d) %s", i, station[i].name);
+			printf("(id:%d) %s \n", i, station[i].name);
 			for (int j=0; j<=4; j++)
 				if (station[i].lines_connected[j] != 0 )
-					printf(":%s", line[station[i].lines_connected[j]].name);
+					printf(":%s \n", line[station[i].lines_connected[j]].name);
 			printf("\n");	
 		}
 
 }
+
+void color_magenta () {
+  printf("\033[0;35m");
+}
+
 void color_red () {
   printf("\033[1;31m");
 }
@@ -329,6 +336,40 @@ int check_input()
 						}
 		}				
 	}	
+   
+   	// Test if the stations differ by 2 lines
+	for (int starting_line_index=0; starting_line_index < station[start_id].number_of_lines; starting_line_index++)
+	{
+		current_line = station[start_id].lines_connected[starting_line_index];
+		memset(line_frecvence_array, 0, total_lines*sizeof(int));
+
+		// Update lines we can reach from the starting station
+		for (int station_index=0; station_index < line[current_line].number_of_stations; station_index++)
+
+			for (int line_index=0; line_index < station[line[current_line].stations[station_index]].number_of_lines; line_index++)
+
+				line_frecvence_array[station[line[current_line].stations[station_index]].lines_connected[line_index]]++;
+
+		// Verify each line for connections with destination's line
+		for (int line_id=1; line_id <= total_lines; line_id++)
+
+			if (line_frecvence_array[line_id] > 0) 
+
+				for (int station_index=0; station_index < line[line_id].number_of_stations; station_index++)
+
+					for(int line_index=0; line_index < station[line[line_id].stations[station_index]].number_of_lines; line_index++ )
+
+						for(int destination_line_index=0; destination_line_index < station[destination_id].number_of_lines; destination_line_index++)
+							
+							if (station[line[line_id].stations[station_index]].lines_connected[line_index] 
+								== station[destination_id].lines_connected[destination_line_index])
+							{
+								algorithm = 3;
+								destination_line = station[destination_id].lines_connected[destination_line_index];
+								middle_line = line_id;
+								return 0; 
+							}
+	}
 
 
 }
@@ -428,7 +469,7 @@ void one_line_path()
 	print_path(start_index, destination_index, lenght);
 }
 
-void two_lines_path()
+void two_lines_path(int destination_line_id)
 {
 	int lenght = 9999, start_index, destination_index;
 
@@ -441,7 +482,7 @@ void two_lines_path()
 
 	for (int i=0; i < line[current_line].number_of_stations; i++)
 		for (int index=0; index<=6; index++)
-			if (station[line[current_line].stations[i]].lines_connected[index] == destination_line && abs(i - start_index) < lenght)
+			if (station[line[current_line].stations[i]].lines_connected[index] == destination_line_id && abs(i - start_index) < lenght)
 			{
 				lenght = abs(i - start_index);
 				destination_index=i;
@@ -457,20 +498,33 @@ void two_lines_path()
 	color_reset();    printf("you have to change lines from ");
 	color_red(); printf("%s",line[current_line].name);
 	color_reset();    printf(" to ");
-	color_red(); printf("%s; \n",line[destination_line].name);
+	color_red(); printf("%s \n",line[destination_line_id].name);
 	
 	time += 5; // Adding some time accounting for the walk between lines
+	total_changes++;
 	start_id = line[current_line].stations[destination_index];
-	current_line = destination_line;
-	one_line_path();
+	current_line = destination_line_id;
+	
+}
 
+void three_lines_path()
+{
+two_lines_path(middle_line);
+two_lines_path(destination_line);
+one_line_path();
 }
 
 void find_route()
 {
 	time = 0;
 	total_lenght = 0;
-	printf("\n");
+	total_changes = 0;
+	
+	printf("\nShowing directions from ");
+	color_blue();  printf("%s ", station[start_id].name);
+	color_reset(); printf(" to ");
+	color_blue();  printf("%s", station[destination_id].name);
+	color_reset(); printf(".\n"); 
 
 	switch (algorithm)
 	{
@@ -479,7 +533,12 @@ void find_route()
 		break;
 
 		case 2:
-		two_lines_path();
+		two_lines_path(destination_line);
+		one_line_path();
+		break;
+
+		case 3:
+		three_lines_path();
 		break;
 
 		default:
@@ -487,7 +546,7 @@ void find_route()
 		break;
 	}
 	
-	printf("\nYour journey will take approximately %g minutes. (%d stops)", round(time), total_lenght);
+	printf("\nYour journey will take approximately %g minutes. (%d stops, %d changes)", round(time), total_lenght, total_changes);
 	printf("\nService run by %s. Check their website for ticket information.\n", service_operator);
 }
 
