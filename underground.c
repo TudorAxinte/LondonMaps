@@ -9,8 +9,10 @@ char* stations_file;
 char* service_operator;
 float time;
 float station_pass_time;
+bool testing;
 int algorithm;
 int current_line;
+int first_line;
 int middle_line;
 int destination_line;
 int total_stations;
@@ -20,6 +22,8 @@ int total_lenght;
 int total_changes;
 int start_id;
 int destination_id;
+int line_frecvence_array[20];
+int line_frecvence_array2[20];
 
 struct metro_station
 {
@@ -86,8 +90,15 @@ void get_stations()
     else 
    		while (fgets(string, 64, fp) != NULL) 
     		{
-      		 	
-    	     if (strchr(string, '*') != NULL) 
+      		 if (strchr(string, '$') != NULL)
+      		 {
+      		 	line[line_id].number_of_stations = number_of_stations; 
+      			total_lines = line_id;
+    			total_stations = id;
+    			fclose(fp);
+      		 }
+    	     
+    	    else if (strchr(string, '*') != NULL) 
 
     	     {	
     	     	// Switching to a new line, finnishing the previous cycle
@@ -116,11 +127,6 @@ void get_stations()
     	     	} 
 
     		}
-    line[line_id].number_of_stations = number_of_stations; 
-		
-    total_lines = line_id;
-    total_stations = id - 1;
-    fclose(fp);
 }
 
 void find_junctions() 
@@ -295,8 +301,7 @@ void get_user_input()
 int check_input()
 {
 	algorithm = 0;
-	
-	int line_frecvence_array[total_lines];
+
 	memset(line_frecvence_array, 0, total_lines*sizeof(int));
 
 	for (int index = 0; index < station[start_id].number_of_lines; index++)
@@ -316,7 +321,7 @@ int check_input()
 
 			}	
 	
-	// Test if the stations differ by one line only
+	// Test if the stations differ by one line 
 	for(int destination_line_index=0; destination_line_index < station[destination_id].number_of_lines; destination_line_index++)
 	{		
 		destination_line = station[destination_id].lines_connected[destination_line_index];
@@ -337,7 +342,7 @@ int check_input()
 		}				
 	}	
    
-   	// Test if the stations differ by 2 lines
+	// Test if the stations differ by more lines
 	for (int starting_line_index=0; starting_line_index < station[start_id].number_of_lines; starting_line_index++)
 	{
 		current_line = station[start_id].lines_connected[starting_line_index];
@@ -352,13 +357,17 @@ int check_input()
 
 		// Verify each line for connections with destination's line
 		for (int line_id=1; line_id <= total_lines; line_id++)
+		{
+			memset(line_frecvence_array2, 0, total_lines*sizeof(int));
 
 			if (line_frecvence_array[line_id] > 0) 
 
 				for (int station_index=0; station_index < line[line_id].number_of_stations; station_index++)
 
 					for(int line_index=0; line_index < station[line[line_id].stations[station_index]].number_of_lines; line_index++ )
-
+					{	
+						line_frecvence_array2[station[line[line_id].stations[station_index]].lines_connected[line_index]]++;
+						
 						for(int destination_line_index=0; destination_line_index < station[destination_id].number_of_lines; destination_line_index++)
 							
 							if (station[line[line_id].stations[station_index]].lines_connected[line_index] 
@@ -369,9 +378,30 @@ int check_input()
 								middle_line = line_id;
 								return 0; 
 							}
-	}
+					}
+							
+			for (int line_id2=1; line_id2 <= total_lines; line_id2++)
 
+				if (line_frecvence_array2[line_id2] > 0)
 
+					for (int station_index2=0; station_index2 < line[line_id2].number_of_stations; station_index2++)
+
+						for (int line_index2=0; line_index2 < station[line[line_id2].stations[station_index2]].number_of_lines; line_index2++)
+
+							for(int destination_line_index=0; destination_line_index < station[destination_id].number_of_lines; destination_line_index++)
+
+								if (station[line[line_id2].stations[station_index2]].lines_connected[line_index2] 
+								 	== station[destination_id].lines_connected[destination_line_index])
+								{
+								// Stations differ by 3 lines, stop looking and show the route
+								algorithm = 4;
+								destination_line = station[destination_id].lines_connected[destination_line_index];
+								middle_line = line_id;
+								first_line = line_id2;
+								return 0; 
+								}
+		}
+	}							
 }
 
 void print_path(int start_index, int destination_index, int lenght)
@@ -466,7 +496,7 @@ void one_line_path()
 	time  += lenght * station_pass_time;
 	total_lenght += lenght;
 
-	print_path(start_index, destination_index, lenght);
+	if (!testing) print_path(start_index, destination_index, lenght);
 }
 
 void two_lines_path(int destination_line_id)
@@ -491,27 +521,23 @@ void two_lines_path(int destination_line_id)
 	time  += lenght * station_pass_time;
 	total_lenght += lenght;
 
-	print_path(start_index, destination_index, lenght);
+	if (!testing)
+	{
+		print_path(start_index, destination_index, lenght);
 
-	color_reset();    printf("\nAt the junction ");
-	color_blue();     printf("%s ", station[line[current_line].stations[destination_index]].name);
-	color_reset();    printf("you have to change lines from ");
-	color_red(); printf("%s",line[current_line].name);
-	color_reset();    printf(" to ");
-	color_red(); printf("%s \n",line[destination_line_id].name);
-	
+		color_reset();    printf("\nAt the junction ");
+		color_blue();     printf("%s ", station[line[current_line].stations[destination_index]].name);
+		color_reset();    printf("you have to change lines from ");
+		color_red();      printf("%s",line[current_line].name);
+		color_reset();    printf(" to ");
+		color_red();      printf("%s \n",line[destination_line_id].name);
+	}
+
 	time += 5; // Adding some time accounting for the walk between lines
 	total_changes++;
 	start_id = line[current_line].stations[destination_index];
 	current_line = destination_line_id;
 	
-}
-
-void three_lines_path()
-{
-two_lines_path(middle_line);
-two_lines_path(destination_line);
-one_line_path();
 }
 
 void find_route()
@@ -520,11 +546,14 @@ void find_route()
 	total_lenght = 0;
 	total_changes = 0;
 	
-	printf("\nShowing directions from ");
-	color_blue();  printf("%s ", station[start_id].name);
-	color_reset(); printf(" to ");
-	color_blue();  printf("%s", station[destination_id].name);
-	color_reset(); printf(".\n"); 
+	if (!testing)
+	{
+		printf("\nShowing directions from ");
+		color_blue();  printf("%s", station[start_id].name);
+		color_reset(); printf(" to ");
+		color_blue();  printf("%s", station[destination_id].name);
+		color_reset(); printf(".\n"); 
+  	}
 
 	switch (algorithm)
 	{
@@ -538,7 +567,16 @@ void find_route()
 		break;
 
 		case 3:
-		three_lines_path();
+		two_lines_path(middle_line);
+		two_lines_path(destination_line);
+		one_line_path();
+		break;
+
+		case 4:
+		two_lines_path(first_line);
+		two_lines_path(middle_line);
+		two_lines_path(destination_line);
+		one_line_path();
 		break;
 
 		default:
@@ -546,8 +584,61 @@ void find_route()
 		break;
 	}
 	
-	printf("\nYour journey will take approximately %g minutes. (%d stops, %d changes)", round(time), total_lenght, total_changes);
-	printf("\nService run by %s. Check their website for ticket information.\n", service_operator);
+	if (!testing)
+	{
+		printf("\nYour journey will take approximately %g minutes. (%d stops, %d changes)", round(time), total_lenght, total_changes);
+		printf("\nService run by %s. Check their website for ticket information.\n", service_operator);
+	}
+}
+
+void test()
+{
+	testing = true;
+
+	start_id = 11; destination_id=21;
+	check_input();
+	find_route();
+	if (algorithm != 1 || total_changes != 0 || total_lenght != 10) 
+		{
+		printf("Eroilor - Pantelimon test failed\n"); 
+		printf("Algorithm %d Changes %d Lenght %d\n", algorithm, total_changes, total_lenght);
+		exit(EXIT_FAILURE);
+		} 
+
+	start_id = 12; destination_id=22;
+	check_input();
+	find_route();
+	if (algorithm != 2 || total_changes != 1 || total_lenght != 8) 
+		{
+		printf("Izvor - Berceni test failed\n"); 
+		printf("Algorithm %d Changes %d Lenght %d\n", algorithm, total_changes, total_lenght);
+		exit(EXIT_FAILURE);
+		} 
+
+	start_id = 36; destination_id=58;
+	check_input();
+	find_route();
+	if (algorithm != 3 || total_changes != 2 || total_lenght != 15) 
+		{
+		printf("Preciziei - Straulesti test failed\n"); 
+		printf("Algorithm %d Changes %d Lenght %d\n", algorithm, total_changes, total_lenght);
+		exit(EXIT_FAILURE);
+		} 	
+	
+	start_id = 58; destination_id=36;
+	check_input();
+	find_route();
+	if (algorithm != 3 || total_changes != 2 || total_lenght != 15) 
+		{
+		printf("Straulesti - Preciziei test failed\n"); 
+		printf("Algorithm %d Changes %d Lenght %d\n", algorithm, total_changes, total_lenght);
+		exit(EXIT_FAILURE);
+		} 
+	
+	testing = false;
+
+	printf("All tests passed successfully.\n");
+
 }
 
 void debug()
@@ -644,6 +735,13 @@ void debug()
 			break;
 		}
 		
+		else if (strcmp(command,"test")==0)
+		{	
+			test();
+			debug();
+			break;
+		}
+
 		else if (strcmp(command,"quit")==0)
 		{	
 			debuging = false;
@@ -661,16 +759,13 @@ void debug()
 
 int main()
 {
-	// location(2);
-	// get_stations();		
-	// printf("Station list updated successfully with %d stations on %d lines.\n", total_stations, total_lines);
-	// find_junctions();
-	// printf("Junction list updated successfully with %d junction stations.\n", total_junctions);
+	location(2);
+	get_stations();		
+	printf("Station list updated successfully with %d stations on %d lines.\n", total_stations, total_lines);
+	find_junctions();
+	printf("Junction list updated successfully with %d junction stations.\n", total_junctions);
 	
-	
-	//get_user_input();            
-	//check_input();   
-	//find_route();
+	test();
 	
 	debug();
 
