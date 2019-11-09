@@ -293,6 +293,11 @@ void get_user_input()
 				}
 		if (destination_id == -1)
 			printf("Couldn't find any station called %s, please try again.\n", typed_name);
+		if (start_id == destination_id)
+		{
+			printf("Destination is the same as the start, please choose again.\n");
+			destination_id = -1;
+		}
 	}
 
 	
@@ -330,13 +335,14 @@ int check_input()
 		{
 				current_line = station[start_id].lines_connected[line_index];
 
-				for (int index = 0; index <= line[current_line].number_of_stations ; index++)
+				for (int station_index = 0; station_index < line[current_line].number_of_stations ; station_index++)
 			
-					for(int station_line_index=0; station_line_index < station[line[current_line].stations[index]].number_of_lines; station_line_index++)
+					for(int line_index2=0; line_index2 < station[line[current_line].stations[station_index]].number_of_lines; line_index2++)
 
-						if (station[line[current_line].stations[index]].lines_connected[station_line_index] == destination_line)
+						if (station[line[current_line].stations[station_index]].lines_connected[line_index2] == destination_line )
 						{
-							algorithm = 2;
+
+							algorithm = 2; 
 							return 0;
 						}
 		}				
@@ -408,6 +414,9 @@ int check_input()
 
 void print_path(int start_index, int destination_index, int lenght)
 {
+
+if (lenght!=0)
+	
 	if (start_index > destination_index)
 	{
 		color_reset();  printf("Take the undergrounder heading ");
@@ -477,7 +486,7 @@ void print_path(int start_index, int destination_index, int lenght)
 
 void one_line_path()
 {
-	int lenght = 9999, start_index, destination_index;
+	int lenght = 999, start_index, destination_index;
 
 	for (int i=0; i < line[current_line].number_of_stations; i++)
 		if (strstr( station[line[current_line].stations[i]].name, station[destination_id].name) != 0) 
@@ -489,7 +498,7 @@ void one_line_path()
 	// Extra check to make sure we find the shortest route for lines with duplicate stations
 	for (int i=0; i < line[current_line].number_of_stations; i++)
 		if (strstr( station[line[current_line].stations[i]].name, station[start_id].name) != 0 &&
-			abs(i - destination_index) < lenght) 
+			(abs(i - destination_index) < lenght) ) 
 				{ 
 					start_index = i;
 					lenght = abs(start_index - destination_index);
@@ -503,24 +512,36 @@ void one_line_path()
 
 void two_lines_path(int destination_line_id)
 {
-	int lenght = 999, start_index, destination_index;
+	int lenght = 999, start_index = 0, destination_index = 0;
 
 	for (int i=0; i < line[current_line].number_of_stations; i++)
-		if (strcmp( station[line[current_line].stations[i]].name, station[start_id].name) == 0) 
+		if (strcmp(station[line[current_line].stations[i]].name, station[start_id].name) == 0) 
 			{
 				start_index = i;
 				break;
 			}
 
 	for (int i=0; i < line[current_line].number_of_stations; i++)
+		
 		for (int index=0; index < station[line[current_line].stations[i]].number_of_lines; index++)
 			
-			if (station[line[current_line].stations[i]].lines_connected[index] == destination_line_id && abs(i - start_index) < lenght)
+			if (station[line[current_line].stations[i]].lines_connected[index] == destination_line_id 
+				&& (abs(i - start_index) < lenght) )
 			{
 				lenght = abs(i - start_index);
-				destination_index=i;
+				destination_index = i;
 			}
 
+	if (lenght == 999)
+	{
+		color_red();
+		printf("Failed while searching route %s(id:%d) %s(id:%d)\n",station[start_id].name, start_id,station[destination_id].name,destination_id);
+		color_reset();
+		printf("Start_index: %d | Destination_index: %d | Algoritm: %d\n current: %s | first: %s | middle: %s | dest: %s \n", 
+		start_index, destination_index, algorithm, line[current_line].name, line[first_line].name, line[middle_line].name, line[destination_line].name);
+		exit(EXIT_FAILURE);
+	}
+	
 	time  += lenght * station_pass_time;
 	total_lenght += lenght;
 
@@ -655,6 +676,44 @@ void test()
 
 }
 
+void full_test()
+{
+	testing = true;
+	
+	int errors = 0; 
+	unsigned long long total = total_stations*total_stations;
+
+	for (int i=0; i < total_stations; i++)
+	{	
+		for(int j=0; j< total_stations; j++)
+			if (i != j)
+			{
+			start_id = i;
+			destination_id = j;
+
+			check_input();
+			find_route();
+			
+			if (total_lenght>100 || algorithm==0)
+				{
+				errors++;
+				color_red();
+				printf("Test failed for route %s(id:%d) to %s(id:%d)\n",
+					station[start_id].name, 
+					start_id,
+					station[destination_id].name, 
+					destination_id);
+				color_reset();
+				}
+			}
+	}
+	
+	if (errors == 0) printf("All %llu tests passed successfully.\n", total);		
+	else printf("%d tests failed out of %llu tried\n", errors, total);
+
+	testing = false;
+}
+
 void debug()
 {
 	char command[20];
@@ -748,10 +807,29 @@ void debug()
 			debug();
 			break;
 		}
+
+		else if (strcmp(command,"r")==0)
+		{	
+			int s1,s2;
+			scanf("%d %d",&s1,&s2);
+			start_id = s1;
+			destination_id = s2;
+			check_input();
+			find_route();
+			debug();
+			break;
+		}
 		
 		else if (strcmp(command,"test")==0)
 		{	
 			test();
+			debug();
+			break;
+		}
+
+		else if (strcmp(command,"fulltest")==0)
+		{	
+			full_test();
 			debug();
 			break;
 		}
