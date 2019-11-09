@@ -302,7 +302,7 @@ int check_input()
 {
 	algorithm = 0;
 
-	memset(line_frecvence_array, 0, total_lines*sizeof(int));
+	for (int i=1; i<=total_lines; i++) line_frecvence_array[i] = 0;
 
 	for (int index = 0; index < station[start_id].number_of_lines; index++)
 		line_frecvence_array[station[start_id].lines_connected[index]]++;
@@ -332,7 +332,7 @@ int check_input()
 
 				for (int index = 0; index <= line[current_line].number_of_stations ; index++)
 			
-					for(int station_line_index=0; station_line_index< station[line[current_line].stations[index]].number_of_lines; station_line_index++)
+					for(int station_line_index=0; station_line_index < station[line[current_line].stations[index]].number_of_lines; station_line_index++)
 
 						if (station[line[current_line].stations[index]].lines_connected[station_line_index] == destination_line)
 						{
@@ -346,7 +346,7 @@ int check_input()
 	for (int starting_line_index=0; starting_line_index < station[start_id].number_of_lines; starting_line_index++)
 	{
 		current_line = station[start_id].lines_connected[starting_line_index];
-		memset(line_frecvence_array, 0, total_lines*sizeof(int));
+		for (int i=1; i<=total_lines; i++) line_frecvence_array[i] = 0;
 
 		// Update lines we can reach from the starting station
 		for (int station_index=0; station_index < line[current_line].number_of_stations; station_index++)
@@ -358,10 +358,10 @@ int check_input()
 		// Verify each line for connections with destination's line
 		for (int line_id=1; line_id <= total_lines; line_id++)
 		{
-			memset(line_frecvence_array2, 0, total_lines*sizeof(int));
+			for (int i=1; i<=total_lines; i++) line_frecvence_array2[i] = 0;
 
 			if (line_frecvence_array[line_id] > 0) 
-
+			{	
 				for (int station_index=0; station_index < line[line_id].number_of_stations; station_index++)
 
 					for(int line_index=0; line_index < station[line[line_id].stations[station_index]].number_of_lines; line_index++ )
@@ -373,6 +373,7 @@ int check_input()
 							if (station[line[line_id].stations[station_index]].lines_connected[line_index] 
 								== station[destination_id].lines_connected[destination_line_index])
 							{
+								// We found a route with 2 changes
 								algorithm = 3;
 								destination_line = station[destination_id].lines_connected[destination_line_index];
 								middle_line = line_id;
@@ -380,26 +381,27 @@ int check_input()
 							}
 					}
 							
-			for (int line_id2=1; line_id2 <= total_lines; line_id2++)
+				for (int line_id2=1; line_id2 <= total_lines; line_id2++)
 
-				if (line_frecvence_array2[line_id2] > 0)
+					if (line_frecvence_array2[line_id2] > 0)
 
-					for (int station_index2=0; station_index2 < line[line_id2].number_of_stations; station_index2++)
+						for (int station_index2=0; station_index2 < line[line_id2].number_of_stations; station_index2++)
 
-						for (int line_index2=0; line_index2 < station[line[line_id2].stations[station_index2]].number_of_lines; line_index2++)
+							for (int line_index2=0; line_index2 < station[line[line_id2].stations[station_index2]].number_of_lines; line_index2++)
 
-							for(int destination_line_index=0; destination_line_index < station[destination_id].number_of_lines; destination_line_index++)
+								for(int destination_line_index=0; destination_line_index < station[destination_id].number_of_lines; destination_line_index++)
 
-								if (station[line[line_id2].stations[station_index2]].lines_connected[line_index2] 
-								 	== station[destination_id].lines_connected[destination_line_index])
-								{
-								// Stations differ by 3 lines, stop looking and show the route
-								algorithm = 4;
-								destination_line = station[destination_id].lines_connected[destination_line_index];
-								middle_line = line_id;
-								first_line = line_id2;
-								return 0; 
-								}
+									if (station[line[line_id2].stations[station_index2]].lines_connected[line_index2] 
+								 		== station[destination_id].lines_connected[destination_line_index])
+									{
+									// We found a route with 3 changes
+									algorithm = 4;
+									destination_line = station[destination_id].lines_connected[destination_line_index];
+									middle_line = line_id2;
+									first_line = line_id;
+									return 0; 
+									}
+			}
 		}
 	}							
 }
@@ -501,17 +503,18 @@ void one_line_path()
 
 void two_lines_path(int destination_line_id)
 {
-	int lenght = 9999, start_index, destination_index;
+	int lenght = 999, start_index, destination_index;
 
 	for (int i=0; i < line[current_line].number_of_stations; i++)
-		if (strstr( station[line[current_line].stations[i]].name, station[start_id].name) != 0) 
+		if (strcmp( station[line[current_line].stations[i]].name, station[start_id].name) == 0) 
 			{
 				start_index = i;
 				break;
 			}
 
 	for (int i=0; i < line[current_line].number_of_stations; i++)
-		for (int index=0; index<=6; index++)
+		for (int index=0; index < station[line[current_line].stations[i]].number_of_lines; index++)
+			
 			if (station[line[current_line].stations[i]].lines_connected[index] == destination_line_id && abs(i - start_index) < lenght)
 			{
 				lenght = abs(i - start_index);
@@ -535,6 +538,7 @@ void two_lines_path(int destination_line_id)
 
 	time += 5; // Adding some time accounting for the walk between lines
 	total_changes++;
+	
 	start_id = line[current_line].stations[destination_index];
 	current_line = destination_line_id;
 	
