@@ -383,7 +383,7 @@ int check_input()
 							
 				for (int line_id2=1; line_id2 <= total_lines; line_id2++)
 
-					if (line_frecvence_array2[line_id2] > 0)
+					if (line_frecvence_array2[line_id2] > 0 && line_id != current_line) 
 
 						for (int station_index2=0; station_index2 < line[line_id2].number_of_stations; station_index2++)
 
@@ -635,6 +635,16 @@ void test()
 	if (algorithm != 3 || total_changes != 2 || total_lenght != 15) 
 		{
 		printf("Straulesti - Preciziei test failed\n"); 
+		printf("Algorithm %d Changes %d Lenght %d\n", algorithm, total_changes, total_lenght);
+		exit(EXIT_FAILURE);
+		} 
+
+	start_id = 18; destination_id=70;
+	check_input();
+	find_route();
+	if (algorithm != 3 || total_changes != 2 || total_lenght != 17) 
+		{
+		printf("Titan - Dobra test failed\n"); 
 		printf("Algorithm %d Changes %d Lenght %d\n", algorithm, total_changes, total_lenght);
 		exit(EXIT_FAILURE);
 		} 
